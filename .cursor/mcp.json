@@ -1,0 +1,23 @@
+﻿{
+  "mcpServers": {
+    "firebase": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "firebase-tools@latest",
+        "experimental:mcp",
+        "--dir",
+        "c:/Projetos/IFRS 15/Project-Pathfinder/Projeto IFRS 15",
+        "--only",
+        "auth,firestore,functions,hosting"
+      ]
+    },
+    "stripe": {
+      "command": "npx",
+      "args": ["-y", "@stripe/mcp", "--tools=all", "--api-key=YOUR_STRIPE_SECRET_KEY"],
+      "env": {
+        "STRIPE_API_KEY": "YOUR_STRIPE_SECRET_KEY"
+      }
+    }
+  }
+}
