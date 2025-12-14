@@ -1,10 +1,8 @@
 ﻿{
   "mcpServers": {
     "firebase": {
-      "command": "npx",
+      "command": "C:/Users/win/AppData/Roaming/npm/firebase.cmd",
       "args": [
-        "-y",
-        "firebase-tools@latest",
         "experimental:mcp",
         "--dir",
         "c:/Projetos/IFRS 15/Project-Pathfinder/Projeto IFRS 15",
@@ -13,10 +11,13 @@
       ]
     },
     "stripe": {
-      "command": "npx",
-      "args": ["-y", "@stripe/mcp", "--tools=all", "--api-key=YOUR_STRIPE_SECRET_KEY"],
+      "command": "node",
+      "args": [
+        "C:/Users/win/AppData/Roaming/npm/node_modules/@stripe/mcp/dist/index.js",
+        "--tools=all"
+      ],
       "env": {
-        "STRIPE_API_KEY": "YOUR_STRIPE_SECRET_KEY"
+        "STRIPE_SECRET_KEY": "sk_test_YOUR_KEY_HERE"
       }
     }
   }
