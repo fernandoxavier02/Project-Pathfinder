@@ -1,74 +1,134 @@
-import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { useParams, useLocation } from "wouter";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { StatusBadge } from "@/components/status-badge";
 import { DataTable } from "@/components/data-table";
-import { useI18n } from "@/lib/i18n";
+import { StatusBadge } from "@/components/status-badge";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
 } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useAuth } from "@/lib/auth-firebase";
+import { useI18n } from "@/lib/i18n";
+import { queryClient } from "@/lib/queryClient";
+import type { BillingScheduleWithDetails, ContractWithDetails, LedgerEntryWithDetails, PerformanceObligationSummary } from "@/lib/types";
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
-  ArrowLeft,
-  FileText,
-  Calendar,
-  CurrencyDollar,
-  TrendUp,
-  ClockCounterClockwise,
-  Receipt,
-  Target,
-  ChartLineUp,
-  Plus,
+    ArrowLeft,
+    Calendar,
+    ChartLineUp,
+    ClockCounterClockwise,
+    CurrencyDollar,
+    FileText,
+    Plus,
+    Receipt,
+    Target,
+    TrendUp,
 } from "@phosphor-icons/react";
+import type { PerformanceObligation } from "@shared/firestore-types";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
-import type { ContractWithDetails, PerformanceObligationSummary, BillingScheduleWithDetails, LedgerEntryWithDetails } from "@/lib/types";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { useLocation, useParams } from "wouter";
+import { z } from "zod";
 
 interface ContractFullDetails extends ContractWithDetails {
   customerId: string;
   paymentTerms: string | null;
   createdAt: string;
   updatedAt: string;
+  currentVersionId?: string;
+  versions?: any[];
 }
 
 export default function ContractDetails() {
   const { id } = useParams<{ id: string }>();
   const [, setLocation] = useLocation();
   const { t } = useI18n();
+  const { user } = useAuth();
+
+  // Validação de tenantId
+  if (!user?.tenantId) {
+    return (
+      <div className="p-8 space-y-6 max-w-[1600px] mx-auto">
+        <div className="flex flex-col items-center justify-center h-64 gap-4">
+          <FileText weight="duotone" className="h-16 w-16 text-muted-foreground/30" />
+          <p className="text-lg font-medium text-muted-foreground">Perfil incompleto</p>
+          <p className="text-sm text-muted-foreground">
+            Seu perfil não possui um tenant associado. Por favor, reautentique ou contate o administrador.
+          </p>
+          <Button variant="outline" onClick={() => setLocation("/contracts")} data-testid="button-back-contracts">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Voltar para Contratos
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   const { data: contract, isLoading: contractLoading } = useQuery<ContractFullDetails>({
-    queryKey: [`/api/contracts/${id}`],
-    enabled: !!id,
+    queryKey: ["contract", user?.tenantId, id],
+    queryFn: async () => {
+      if (!user?.tenantId || !id) return null;
+      const { contractService, contractVersionService, customerService } = await import("@/lib/firestore-service");
+      const contractData = await contractService.getById(user.tenantId, id);
+      if (!contractData) return null;
+      
+      const versions = await contractVersionService.getAll(user.tenantId, id);
+      const customer = contractData.customerId 
+        ? await customerService.getById(user.tenantId, contractData.customerId)
+        : null;
+      
+      const currentVersionId = versions.length > 0 ? versions[0].id : undefined;
+      return {
+        ...contractData,
+        customerName: customer?.name || "",
+        versions,
+        currentVersionId,
+      } as any;
+    },
+    enabled: !!id && !!user?.tenantId,
   });
 
+  const currentVersionId = contract?.currentVersionId || (contract?.versions && contract.versions.length > 0 ? contract.versions[0].id : undefined);
+
   const { data: performanceObligations, isLoading: poLoading } = useQuery<PerformanceObligationSummary[]>({
-    queryKey: [`/api/contracts/${id}/performance-obligations`],
-    enabled: !!id,
+    queryKey: ["performance-obligations", user?.tenantId, id, currentVersionId],
+    queryFn: async () => {
+      if (!user?.tenantId || !id || !currentVersionId) return [];
+      const { performanceObligationService } = await import("@/lib/firestore-service");
+      return performanceObligationService.getAll(user.tenantId, id, currentVersionId) as any;
+    },
+    enabled: !!id && !!user?.tenantId && !!currentVersionId,
   });
 
   const { data: billingSchedules, isLoading: billingLoading } = useQuery<BillingScheduleWithDetails[]>({
-    queryKey: [`/api/contracts/${id}/billing-schedules`],
-    enabled: !!id,
+    queryKey: ["billing-schedules", user?.tenantId, id],
+    queryFn: async () => {
+      if (!user?.tenantId || !id) return [];
+      const { billingScheduleService } = await import("@/lib/firestore-service");
+      return billingScheduleService.getByContract(user.tenantId, id) as any;
+    },
+    enabled: !!id && !!user?.tenantId,
   });
 
   const { data: ledgerEntries, isLoading: ledgerLoading } = useQuery<LedgerEntryWithDetails[]>({
-    queryKey: [`/api/contracts/${id}/ledger-entries`],
-    enabled: !!id,
+    queryKey: ["ledger-entries", user?.tenantId, id],
+    queryFn: async () => {
+      if (!user?.tenantId || !id) return [];
+      const { revenueLedgerService } = await import("@/lib/firestore-service");
+      return revenueLedgerService.getByContract(user.tenantId, id) as any;
+    },
+    enabled: !!id && !!user?.tenantId,
   });
 
   const { toast } = useToast();
@@ -97,31 +157,63 @@ export default function ContractDetails() {
 
   const createPOMutation = useMutation({
     mutationFn: async (data: POFormValues) => {
+      if (!user?.tenantId || !id) {
+        throw new Error("Dados do contrato ausentes");
+      }
+      if (!currentVersionId) {
+        throw new Error("É necessário criar uma versão do contrato antes de adicionar obrigações de performance");
+      }
+      
+      // Validar e converter allocatedPrice
+      const parsedAllocatedPrice = parseFloat(data.allocatedPrice);
+      if (isNaN(parsedAllocatedPrice) || parsedAllocatedPrice <= 0) {
+        throw new Error("O preço alocado deve ser um número positivo");
+      }
+      
+      // Validar e converter percentComplete
       const percentValue = data.percentComplete?.trim() || "0";
       const parsedPercent = parseFloat(percentValue);
+      const finalPercent = isNaN(parsedPercent) || parsedPercent < 0 ? 0 : Math.min(parsedPercent, 100);
       
-      return apiRequest("POST", `/api/contracts/${id}/performance-obligations`, {
-        description: data.description,
-        allocatedPrice: data.allocatedPrice,
-        recognitionMethod: data.recognitionMethod,
-        measurementMethod: data.measurementMethod || null,
-        percentComplete: isNaN(parsedPercent) ? "0" : percentValue,
-      });
+      // Calcular valores derivados
+      const recognizedAmount = (parsedAllocatedPrice * finalPercent) / 100;
+      const deferredAmount = parsedAllocatedPrice - recognizedAmount;
+      
+      const { performanceObligationService } = await import("@/lib/firestore-service");
+      
+      // Preparar dados com tipos corretos (PerformanceObligation interface)
+      const poData: Omit<PerformanceObligation, "id" | "createdAt"> = {
+        contractVersionId: currentVersionId,
+        description: data.description.trim(),
+        allocatedPrice: parsedAllocatedPrice,
+        recognitionMethod: data.recognitionMethod as "over_time" | "point_in_time",
+        percentComplete: finalPercent,
+        recognizedAmount: recognizedAmount,
+        deferredAmount: deferredAmount,
+        isSatisfied: false,
+      };
+      
+      // Adicionar measurementMethod apenas se tiver valor válido (e se recognitionMethod for over_time)
+      if (data.recognitionMethod === "over_time" && data.measurementMethod && (data.measurementMethod === "input" || data.measurementMethod === "output")) {
+        poData.measurementMethod = data.measurementMethod as "input" | "output";
+      }
+      
+      return performanceObligationService.create(user.tenantId, id, currentVersionId, poData);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/contracts/${id}/performance-obligations`] });
-      queryClient.invalidateQueries({ queryKey: [`/api/contracts/${id}`] });
+      queryClient.invalidateQueries({ queryKey: ["performance-obligations", user?.tenantId, id] });
+      queryClient.invalidateQueries({ queryKey: ["contract", user?.tenantId, id] });
       setPoDialogOpen(false);
       poForm.reset();
       toast({
-        title: "Success",
-        description: "Performance obligation created successfully",
+        title: "Sucesso",
+        description: "Obrigação de performance criada com sucesso",
       });
     },
-    onError: () => {
+    onError: (error: Error) => {
       toast({
-        title: "Error",
-        description: "Failed to create performance obligation",
+        title: "Erro",
+        description: error.message || "Falha ao criar obrigação de performance",
         variant: "destructive",
       });
     },
@@ -456,7 +548,12 @@ export default function ContractDetails() {
                 </Badge>
                 <Dialog open={poDialogOpen} onOpenChange={setPoDialogOpen}>
                   <DialogTrigger asChild>
-                    <Button size="sm" data-testid="button-add-po">
+                    <Button 
+                      size="sm" 
+                      data-testid="button-add-po"
+                      disabled={!currentVersionId}
+                      title={!currentVersionId ? "Crie uma versão do contrato antes de adicionar obrigações" : ""}
+                    >
                       <Plus className="h-4 w-4 mr-1" />
                       Add
                     </Button>
@@ -586,6 +683,12 @@ export default function ContractDetails() {
                   {[1, 2, 3].map((i) => (
                     <Skeleton key={i} className="h-16 w-full" />
                   ))}
+                </div>
+              ) : !currentVersionId ? (
+                <div className="h-32 flex flex-col items-center justify-center text-muted-foreground gap-2">
+                  <Target weight="duotone" className="h-10 w-10 text-muted-foreground/30" />
+                  <p className="text-sm font-medium">Nenhuma versão do contrato encontrada</p>
+                  <p className="text-xs text-muted-foreground">Crie uma versão do contrato antes de adicionar obrigações de performance</p>
                 </div>
               ) : performanceObligations && performanceObligations.length > 0 ? (
                 <DataTable columns={poColumns} data={performanceObligations} />
