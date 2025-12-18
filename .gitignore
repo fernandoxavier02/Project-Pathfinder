@@ -1,0 +1,19 @@
+# Arquivos com credenciais e segredos
+CREDENCIAIS_CONFIGURADAS.md
+configurar-firebase-secrets.ps1
+configurar-variaveis-ambiente.ps1
+CONFIGURAR_CREDENCIAIS.md
+
+# Backups de configuração
+.cursor/*.backup*
+.cursor/*.bak
+*.bak
+
+# Configurações locais
+.claude/settings.local.json
+.cursor/mcp.json
+
+# Variáveis de ambiente
+.env
+.env.local
+.env.*.local

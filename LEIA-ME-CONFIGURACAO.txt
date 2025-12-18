@@ -1,0 +1,78 @@
+================================================================================
+  CONFIGURAÇÃO DE CREDENCIAIS - IFRS 15 REVENUE MANAGER
+================================================================================
+
+✅ VARIÁVEIS DE AMBIENTE CONFIGURADAS COM SUCESSO!
+
+As seguintes credenciais foram configuradas no sistema Windows:
+- STRIPE_SECRET_KEY (Produção)
+- STRIPE_PUBLISHABLE_KEY (Produção)
+- FIREBASE_TOKEN (CI/CD)
+- BIGQUERY_PROJECT
+
+================================================================================
+  ⚠️  AÇÃO OBRIGATÓRIA: REINICIAR O CURSOR IDE
+================================================================================
+
+Para que as variáveis de ambiente sejam reconhecidas pelo Cursor e pelo MCP:
+
+1. FECHE completamente o Cursor IDE
+2. ABRA novamente o Cursor IDE
+3. As variáveis estarão disponíveis
+
+================================================================================
+  PRÓXIMOS PASSOS
+================================================================================
+
+1. REINICIAR CURSOR (obrigatório)
+
+2. VERIFICAR .cursor/mcp.json
+   - Deve usar ${VARIAVEL} para referenciar variáveis de ambiente
+   - Exemplo: "STRIPE_API_KEY": "${STRIPE_SECRET_KEY}"
+
+3. CONFIGURAR FIREBASE SECRETS (recomendado para produção)
+   Execute:
+   cd "c:\Projetos\IFRS 15\Project-Pathfinder\Projeto IFRS 15"
+   firebase functions:secrets:set STRIPE_SECRET_KEY
+   firebase functions:secrets:set STRIPE_WEBHOOK_SECRET
+
+4. CONFIGURAR WEBHOOK NO STRIPE
+   - URL: https://us-central1-ifrs15-revenue-manager.cloudfunctions.net/stripeWebhook
+   - Eventos: checkout.session.completed, customer.subscription.*
+   - Copie o Signing Secret (whsec_...)
+
+5. DEPLOY
+   firebase deploy --only functions
+
+================================================================================
+  ARQUIVOS CRIADOS
+================================================================================
+
+📄 CONFIGURAR_CREDENCIAIS.md - Guia completo de configuração
+📄 CREDENCIAIS_CONFIGURADAS.md - Status e valores configurados
+📄 configurar-variaveis-ambiente.ps1 - Script de configuração
+📄 configurar-firebase-secrets.ps1 - Script Firebase
+📄 LEIA-ME-CONFIGURACAO.txt - Este arquivo
+
+================================================================================
+  VERIFICAÇÃO
+================================================================================
+
+Após reiniciar o Cursor, execute no PowerShell:
+
+echo $env:STRIPE_SECRET_KEY
+echo $env:FIREBASE_TOKEN
+
+Deve mostrar os valores configurados.
+
+================================================================================
+  SUPORTE
+================================================================================
+
+Problemas? Verifique:
+1. Cursor foi reiniciado?
+2. .cursor/mcp.json usa ${VARIAVEL}?
+3. Firebase CLI está logado? (firebase login:list)
+4. Chaves Stripe estão corretas? (devem começar com sk_live_ e pk_live_)
+
+================================================================================

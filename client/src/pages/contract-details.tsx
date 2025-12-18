@@ -230,10 +230,34 @@ export default function ContractDetails() {
     }).format(typeof amount === "string" ? parseFloat(amount) : amount);
   };
 
-  const formatDate = (dateStr: string | null) => {
-    if (!dateStr) return "-";
+  const formatDate = (value: unknown) => {
+    if (!value) return "-";
+
+    const toDate = (input: unknown): Date | null => {
+      if (!input) return null;
+
+      if (input instanceof Date) {
+        return isNaN(input.getTime()) ? null : input;
+      }
+
+      if (typeof input === "string" || typeof input === "number") {
+        const parsed = new Date(input);
+        return isNaN(parsed.getTime()) ? null : parsed;
+      }
+
+      if (typeof input === "object" && typeof (input as any).toDate === "function") {
+        const parsed = (input as any).toDate();
+        return parsed instanceof Date && !isNaN(parsed.getTime()) ? parsed : null;
+      }
+
+      return null;
+    };
+
+    const date = toDate(value);
+    if (!date) return "-";
+
     try {
-      return format(new Date(dateStr), "MMM dd, yyyy");
+      return format(date, "MMM dd, yyyy");
     } catch {
       return "-";
     }
