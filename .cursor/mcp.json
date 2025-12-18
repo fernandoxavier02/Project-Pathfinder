@@ -1,4 +1,4 @@
-﻿{
+{
   "mcpServers": {
     "firebase": {
       "command": "C:/Users/win/AppData/Roaming/npm/firebase.cmd",
@@ -9,16 +9,6 @@
         "--only",
         "auth,firestore,functions,hosting"
       ]
-    },
-    "stripe": {
-      "command": "node",
-      "args": [
-        "C:/Users/win/AppData/Roaming/npm/node_modules/@stripe/mcp/dist/index.js",
-        "--tools=all"
-      ],
-      "env": {
-        "STRIPE_SECRET_KEY": "sk_test_YOUR_KEY_HERE"
-      }
     }
   }
 }
