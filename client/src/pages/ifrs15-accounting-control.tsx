@@ -20,6 +20,8 @@ import {
   DollarSign
 } from "lucide-react";
 import { format, startOfMonth, endOfMonth, subMonths } from "date-fns";
+import { formatDate, getCurrentDate } from "@/lib/dateUtils";
+import { ClockWidget } from "@/components/ClockWidget";
 
 interface AccountingControlRow {
   id: string;
@@ -52,7 +54,7 @@ interface AccountingControlData {
 }
 
 export default function IFRS15AccountingControl() {
-  const currentDate = new Date();
+  const currentDate = getCurrentDate();
   const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear().toString());
   const [selectedMonth, setSelectedMonth] = useState((currentDate.getMonth() + 1).toString().padStart(2, "0"));
 
@@ -230,7 +232,9 @@ export default function IFRS15AccountingControl() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="min-h-screen bg-background">
+      <ClockWidget />
+      <div className="p-6 space-y-6">
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-2xl font-semibold">IFRS 15 Accounting Control</h1>
@@ -404,6 +408,7 @@ export default function IFRS15AccountingControl() {
           )}
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }

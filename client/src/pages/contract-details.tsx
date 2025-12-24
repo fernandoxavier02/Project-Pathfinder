@@ -35,11 +35,12 @@ import {
 } from "@phosphor-icons/react";
 import type { PerformanceObligation } from "@shared/firestore-types";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { format } from "date-fns";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useLocation, useParams } from "wouter";
 import { z } from "zod";
+import { formatDate } from "@/lib/dateUtils";
+import { ClockWidget } from "@/components/ClockWidget";
 
 interface ContractFullDetails extends ContractWithDetails {
   customerId: string;
@@ -230,39 +231,6 @@ export default function ContractDetails() {
     }).format(typeof amount === "string" ? parseFloat(amount) : amount);
   };
 
-  const formatDate = (value: unknown) => {
-    if (!value) return "-";
-
-    const toDate = (input: unknown): Date | null => {
-      if (!input) return null;
-
-      if (input instanceof Date) {
-        return isNaN(input.getTime()) ? null : input;
-      }
-
-      if (typeof input === "string" || typeof input === "number") {
-        const parsed = new Date(input);
-        return isNaN(parsed.getTime()) ? null : parsed;
-      }
-
-      if (typeof input === "object" && typeof (input as any).toDate === "function") {
-        const parsed = (input as any).toDate();
-        return parsed instanceof Date && !isNaN(parsed.getTime()) ? parsed : null;
-      }
-
-      return null;
-    };
-
-    const date = toDate(value);
-    if (!date) return "-";
-
-    try {
-      return format(date, "MMM dd, yyyy");
-    } catch {
-      return "-";
-    }
-  };
-
   if (contractLoading) {
     return (
       <div className="p-8 space-y-6 max-w-[1600px] mx-auto">
@@ -352,12 +320,12 @@ export default function ContractDetails() {
     {
       key: "billingDate",
       header: "Billing Date",
-      cell: (row: BillingScheduleWithDetails) => formatDate(row.billingDate),
+      cell: (row: BillingScheduleWithDetails) => formatDate(row.billingDate, "dd/MM/yyyy"),
     },
     {
       key: "dueDate",
       header: "Due Date",
-      cell: (row: BillingScheduleWithDetails) => formatDate(row.dueDate),
+      cell: (row: BillingScheduleWithDetails) => formatDate(row.dueDate, "dd/MM/yyyy"),
     },
     {
       key: "amount",
@@ -389,7 +357,7 @@ export default function ContractDetails() {
     {
       key: "entryDate",
       header: "Date",
-      cell: (row: LedgerEntryWithDetails) => formatDate(row.entryDate),
+      cell: (row: LedgerEntryWithDetails) => formatDate(row.entryDate, "dd/MM/yyyy"),
     },
     {
       key: "entryType",
@@ -429,7 +397,9 @@ export default function ContractDetails() {
     : 0;
 
   return (
-    <div className="p-8 space-y-6 max-w-[1600px] mx-auto">
+    <div className="min-h-screen bg-background">
+      <ClockWidget />
+      <div className="p-8 space-y-6 max-w-[1600px] mx-auto">
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-4">
           <Button 
@@ -530,7 +500,7 @@ export default function ContractDetails() {
             </div>
             <div className="mt-4">
               <p className="text-sm font-semibold" data-testid="text-dates">
-                {formatDate(contract.startDate)} - {formatDate(contract.endDate)}
+                {formatDate(contract.startDate, "dd/MM/yyyy")} - {formatDate(contract.endDate, "dd/MM/yyyy")}
               </p>
               <p className="text-sm text-muted-foreground mt-1">Contract Period</p>
               <p className="text-xs text-muted-foreground mt-2">
@@ -790,6 +760,7 @@ export default function ContractDetails() {
           </Card>
         </TabsContent>
       </Tabs>
+      </div>
     </div>
   );
 }
