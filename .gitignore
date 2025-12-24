@@ -18,3 +18,13 @@ CONFIGURAR_CREDENCIAIS.md
 .env.local
 .env.*.local
 
+# Dependências Node.js
+node_modules/
+**/node_modules/
+
+# Build outputs
+dist/
+build/
+*.log
+node_modules/
+package-lock.json
